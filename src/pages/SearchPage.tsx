@@ -20,6 +20,7 @@ export default function SearchPage() {
   } = useBookStore();
 
   const [localQuery, setLocalQuery] = useState(searchQuery);
+  const [searchError, setSearchError] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
 
   // Debounce поискового запроса
@@ -44,6 +45,7 @@ export default function SearchPage() {
   const performSearch = async (query: string, page: number) => {
     try {
       setIsLoading(true);
+      setSearchError(false);
       setSearchQuery(query);
       setCurrentPage(page);
       
@@ -51,6 +53,7 @@ export default function SearchPage() {
       setSearchResults(result.books);
       setTotalItems(result.totalItems);
     } catch (error) {
+      setSearchError(true);
       console.error('Search error:', error);
       setSearchResults([]);
       setTotalItems(0);
@@ -87,7 +90,7 @@ export default function SearchPage() {
           </h1>
         </div>
         <p className="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed">
-          Найдите интересующие вас книги с помощью Google Books API. 
+          Найдите интересующие вас книги с помощью Google Books и резервного каталога Open Library. 
           Ищите по названию, автору или ключевым словам.
         </p>
       </div>
@@ -187,6 +190,12 @@ export default function SearchPage() {
             </div>
           )}
         </>
+      ) : searchError ? (
+        <div role="alert" className="text-center py-16">
+          <h3 className="text-xl font-semibold text-slate-800 mb-2">Сервис поиска временно недоступен</h3>
+          <p className="text-slate-600">Не удалось получить ответ Google Books. Попробуйте повторить запрос позже.</p>
+          <button type="button" onClick={() => performSearch(localQuery, 1)} className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-xl">Повторить поиск</button>
+        </div>
       ) : debouncedQuery ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
