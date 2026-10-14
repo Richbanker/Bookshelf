@@ -34,7 +34,7 @@ export default function FavoritesPage() {
               </div>
               <p className="text-slate-600">
                 {favoriteBooks.length} {favoriteBooks.length === 1 ? 'книга' : 
-                  favoriteBooks.length < 5 ? 'книги' : 'книг'} в избранном
+                  favoriteBooks.length % 10 >= 2 && favoriteBooks.length % 10 <= 4 && (favoriteBooks.length % 100 < 12 || favoriteBooks.length % 100 > 14) ? 'книги' : 'книг'} в избранном
               </p>
             </div>
           </div>
