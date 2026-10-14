@@ -34,7 +34,7 @@ export default function ReadPage() {
               </div>
               <p className="text-slate-600">
                 {readBooks.length} {readBooks.length === 1 ? 'книга' : 
-                  readBooks.length < 5 ? 'книги' : 'книг'} прочитано
+                  readBooks.length % 10 >= 2 && readBooks.length % 10 <= 4 && (readBooks.length % 100 < 12 || readBooks.length % 100 > 14) ? 'книги' : 'книг'} прочитано
               </p>
             </div>
           </div>
