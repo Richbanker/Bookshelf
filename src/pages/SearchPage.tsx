@@ -136,7 +136,7 @@ export default function SearchPage() {
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
             <Loader2 size={32} className="animate-spin text-white" />
           </div>
-          <p className="text-slate-600 text-lg font-medium">Поиск книг...</p>
+          <p role="status" className="text-slate-600 text-lg font-medium">Поиск книг...</p>
         </div>
       ) : searchResults.length > 0 ? (
         <>
