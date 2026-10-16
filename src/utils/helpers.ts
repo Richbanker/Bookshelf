@@ -22,7 +22,7 @@ export const formatAuthors = (authors: string[] | undefined): string => {
 
 export const getRatingStars = (rating: number | undefined): string => {
   if (!rating) return '☆☆☆☆☆';
-  const fullStars = Math.floor(rating);
+  const fullStars = Math.floor(Math.max(0, Math.min(5, rating)));
   const hasHalfStar = rating % 1 >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
   
