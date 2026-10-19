@@ -57,7 +57,7 @@ export default function BookPage() {
             <img src={book.imageUrl} alt={book.title} className="w-full rounded-2xl shadow-lg" />
           ) : (
             <div className="w-full aspect-[3/4] bg-slate-100 flex items-center justify-center rounded-2xl">
-              <BookOpen size={64} className="text-slate-300" />
+              <BookOpen size={64} aria-hidden="true" className="text-slate-300" />
             </div>
           )}
         </div>
