@@ -168,7 +168,7 @@ export default function SearchPage() {
             <div className="flex justify-center items-center gap-4">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
+                disabled={isLoading || currentPage === 1}
                 className="px-6 py-3 border-2 border-slate-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 font-medium"
               >
                 ← Назад
@@ -182,7 +182,7 @@ export default function SearchPage() {
               
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={isLoading || currentPage === totalPages}
                 className="px-6 py-3 border-2 border-slate-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 font-medium"
               >
                 Вперед →
