@@ -147,7 +147,7 @@ export default function SearchPage() {
                 <BookOpen size={20} className="text-blue-500" />
                 <h2 className="text-xl font-semibold text-slate-800">Результаты поиска</h2>
               </div>
-              <p className="text-slate-600">
+              <p role="status" className="text-slate-600">
                 Найдено <span className="font-semibold text-blue-600">{totalItems.toLocaleString()}</span> книг
                 {debouncedQuery && (
                   <span> по запросу <span className="font-semibold text-slate-800">"{debouncedQuery}"</span></span>
