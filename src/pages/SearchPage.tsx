@@ -100,7 +100,7 @@ export default function SearchPage() {
         <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+              <Search aria-hidden="true" className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input
                 type="text"
                 value={localQuery}
@@ -121,7 +121,7 @@ export default function SearchPage() {
                 </>
               ) : (
                 <>
-                  <Search size={20} className="text-white" />
+                  <Search size={20} aria-hidden="true" className="text-white" />
                   <span className="text-white">Поиск</span>
                 </>
               )}
