@@ -95,7 +95,7 @@ export async function getBookDetails(bookId: string): Promise<Book> {
   }
   try {
     const url = `${GOOGLE_BOOKS_API_BASE}/volumes/${bookId}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
