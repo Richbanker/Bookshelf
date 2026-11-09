@@ -94,7 +94,7 @@ export async function getBookDetails(bookId: string): Promise<Book> {
       infoLink: `https://openlibrary.org/works/${workId}` };
   }
   try {
-    const url = `${GOOGLE_BOOKS_API_BASE}/volumes/${bookId}`;
+    const url = `${GOOGLE_BOOKS_API_BASE}/volumes/${encodeURIComponent(bookId)}`;
     const response = await fetch(url);
     
     if (!response.ok) {
