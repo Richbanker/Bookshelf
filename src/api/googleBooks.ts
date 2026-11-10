@@ -78,7 +78,7 @@ export async function searchBooks(query: string, page: number = 1, maxResults: n
       imageUrl: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-M.jpg` : undefined,
       publishedDate: item.first_publish_year?.toString(),
       infoLink: `https://openlibrary.org${item.key}`,
-    })), totalItems: data.numFound };
+    })), totalItems: data.numFound ?? data.num_found ?? 0 };
   }
 }
 
