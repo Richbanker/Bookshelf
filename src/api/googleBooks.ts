@@ -35,7 +35,7 @@ export async function searchBooks(query: string, page: number = 1, maxResults: n
 
   try {
     const startIndex = (page - 1) * maxResults;
-    const encodedQuery = encodeURIComponent(query);
+    const encodedQuery = encodeURIComponent(query.trim());
     const url = `${GOOGLE_BOOKS_API_BASE}/volumes?q=${encodedQuery}&startIndex=${startIndex}&maxResults=${maxResults}&orderBy=relevance`;
 
     const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
