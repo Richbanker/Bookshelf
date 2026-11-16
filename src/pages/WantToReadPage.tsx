@@ -21,7 +21,7 @@ export default function WantToReadPage() {
           <div className="mb-6">
             <p className="text-gray-600">
               {wantToReadBooks.length} {wantToReadBooks.length === 1 ? 'книга' : 
-                wantToReadBooks.length < 5 ? 'книги' : 'книг'} в списке желаний
+                wantToReadBooks.length % 10 >= 2 && wantToReadBooks.length % 10 <= 4 && (wantToReadBooks.length % 100 < 12 || wantToReadBooks.length % 100 > 14) ? 'книги' : 'книг'} в списке желаний
             </p>
           </div>
           
