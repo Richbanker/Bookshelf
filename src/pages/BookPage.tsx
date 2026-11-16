@@ -43,14 +43,14 @@ export default function BookPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <BookOpen size={48} className="text-slate-400 mb-4" />
         <h2 className="text-2xl font-bold mb-2">Не удалось загрузить книгу</h2>
-        <button onClick={() => navigate(-1)} className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition">Назад</button>
+        <button type="button" onClick={() => navigate(-1)} className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition">Назад</button>
       </div>
     );
   }
 
   return (
     <div className="max-w-3xl mx-auto py-10 px-4">
-      <button onClick={() => navigate(-1)} className="mb-6 px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition">← Назад</button>
+      <button type="button" onClick={() => navigate(-1)} className="mb-6 px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition">← Назад</button>
       <div className="flex flex-col md:flex-row gap-8 items-start">
         <div className="w-full md:w-1/3 flex-shrink-0">
           {book.imageUrl ? (
