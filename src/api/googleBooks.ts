@@ -72,7 +72,7 @@ export async function searchBooks(query: string, page: number = 1, maxResults: n
     const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&page=${Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1}&limit=${maxResults}`, { signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error('Failed to search books');
     const data = await response.json();
-    return { books: data.docs.map((item: { key: string; title: string; author_name?: string[]; cover_i?: number; first_publish_year?: number }) => ({
+    return { books: (data.docs ?? []).map((item: { key: string; title: string; author_name?: string[]; cover_i?: number; first_publish_year?: number }) => ({
       id: `openlibrary:${item.key.split('/').pop()}`,
       title: item.title,
       authors: item.author_name,
