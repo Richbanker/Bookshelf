@@ -66,7 +66,7 @@ export default function BookCard({ book }: BookCardProps) {
         )}
         
         {/* Градиентный оверлей */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         {/* Кнопки действий */}
         <div className="absolute top-3 right-3 flex flex-col gap-2">
