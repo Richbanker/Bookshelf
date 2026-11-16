@@ -103,6 +103,7 @@ export default function SearchPage() {
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input
                 type="text"
+                aria-label="Поиск книг по названию, автору или ключевым словам"
                 value={localQuery}
                 onChange={(e) => setLocalQuery(e.target.value)}
                 placeholder="Введите название книги, автора или ключевые слова..."
