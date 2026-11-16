@@ -71,7 +71,10 @@ export default function BookCard({ book }: BookCardProps) {
         {/* Кнопки действий */}
         <div className="absolute top-3 right-3 flex flex-col gap-2">
           <button
+            type="button"
             onClick={handleFavoriteToggle}
+            aria-label={isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
+            aria-pressed={isFavorite}
             className={`p-2.5 rounded-full transition-all duration-200 transform hover:scale-110 ${
               isFavorite 
                 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg' 
@@ -83,7 +86,10 @@ export default function BookCard({ book }: BookCardProps) {
           </button>
           
           <button
+            type="button"
             onClick={handleReadToggle}
+            aria-label={isRead ? "Отметить как непрочитанную" : "Отметить как прочитанную"}
+            aria-pressed={isRead}
             className={`p-2.5 rounded-full transition-all duration-200 transform hover:scale-110 ${
               isRead 
                 ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg' 
@@ -95,7 +101,10 @@ export default function BookCard({ book }: BookCardProps) {
           </button>
           
           <button
+            type="button"
             onClick={handleWantToReadToggle}
+            aria-label={isWantToRead ? "Убрать из списка желаний" : "Добавить в список желаний"}
+            aria-pressed={isWantToRead}
             className={`p-2.5 rounded-full transition-all duration-200 transform hover:scale-110 ${
               isWantToRead 
                 ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg' 
