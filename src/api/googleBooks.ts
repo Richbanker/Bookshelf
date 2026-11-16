@@ -34,7 +34,8 @@ export async function searchBooks(query: string, page: number = 1, maxResults: n
   }
 
   try {
-    const startIndex = (page - 1) * maxResults;
+    const safePage = Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
+    const startIndex = (safePage - 1) * maxResults;
     const encodedQuery = encodeURIComponent(query);
     const url = `${GOOGLE_BOOKS_API_BASE}/volumes?q=${encodedQuery}&startIndex=${startIndex}&maxResults=${maxResults}&orderBy=relevance`;
 
@@ -68,7 +69,7 @@ export async function searchBooks(query: string, page: number = 1, maxResults: n
     };
   } catch (error) {
     console.error('Error searching books:', error);
-    const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&page=${page}&limit=${maxResults}`, { signal: AbortSignal.timeout(10000) });
+    const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&page=${Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1}&limit=${maxResults}`, { signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error('Failed to search books');
     const data = await response.json();
     return { books: data.docs.map((item: { key: string; title: string; author_name?: string[]; cover_i?: number; first_publish_year?: number }) => ({
