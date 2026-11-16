@@ -72,7 +72,7 @@ export default function BookPage() {
           {book.publishedDate && (
             <div className="flex items-center gap-2 mb-4 text-slate-500">
               <Calendar size={16} />
-              <span>{new Date(book.publishedDate).toLocaleDateString()}</span>
+              <span>{new Date(book.publishedDate).toLocaleDateString('ru-RU')}</span>
             </div>
           )}
           {book.description && (
