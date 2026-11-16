@@ -61,7 +61,7 @@ export default function BookCard({ book }: BookCardProps) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-400">
-            <BookOpen size={48} />
+            <BookOpen size={48} aria-hidden="true" />
           </div>
         )}
         
