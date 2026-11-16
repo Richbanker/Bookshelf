@@ -54,7 +54,7 @@ export default function BookPage() {
       <div className="flex flex-col md:flex-row gap-8 items-start">
         <div className="w-full md:w-1/3 flex-shrink-0">
           {book.imageUrl ? (
-            <img src={book.imageUrl} alt={book.title} className="w-full rounded-2xl shadow-lg" />
+            <img loading="lazy" decoding="async" src={book.imageUrl} alt={book.title} className="w-full rounded-2xl shadow-lg" />
           ) : (
             <div className="w-full aspect-[3/4] bg-slate-100 flex items-center justify-center rounded-2xl">
               <BookOpen size={64} className="text-slate-300" />
