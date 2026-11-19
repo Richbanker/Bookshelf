@@ -103,13 +103,9 @@ export const useBookStore = create<BookStore>()(
       },
       
       removeFromFavorites: (bookId) => {
-        const { books } = get();
-        const updatedBooks = books.map(book => 
-          book.id === bookId 
-            ? { ...book, status: book.status === 'favorite' ? null : book.status }
-            : book
-        );
-        set({ books: updatedBooks });
+        set(({ books }) => ({
+          books: books.filter(book => book.id !== bookId || book.status !== 'favorite'),
+        }));
       },
       
       markAsRead: (book) => {
@@ -134,13 +130,9 @@ export const useBookStore = create<BookStore>()(
       },
       
       removeFromRead: (bookId) => {
-        const { books } = get();
-        const updatedBooks = books.map(book => 
-          book.id === bookId 
-            ? { ...book, status: book.status === 'read' ? null : book.status }
-            : book
-        );
-        set({ books: updatedBooks });
+        set(({ books }) => ({
+          books: books.filter(book => book.id !== bookId || book.status !== 'read'),
+        }));
       },
       
       addToWantToRead: (book) => {
@@ -165,13 +157,9 @@ export const useBookStore = create<BookStore>()(
       },
       
       removeFromWantToRead: (bookId) => {
-        const { books } = get();
-        const updatedBooks = books.map(book => 
-          book.id === bookId 
-            ? { ...book, status: book.status === 'want-to-read' ? null : book.status }
-            : book
-        );
-        set({ books: updatedBooks });
+        set(({ books }) => ({
+          books: books.filter(book => book.id !== bookId || book.status !== 'want-to-read'),
+        }));
       },
       
       // Геттеры
