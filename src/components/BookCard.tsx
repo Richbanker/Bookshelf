@@ -49,7 +49,7 @@ export default function BookCard({ book }: BookCardProps) {
   };
 
   return (
-    <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-slate-200 transform hover:-translate-y-1">
+    <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-slate-200 transform hover:-translate-y-1">
       {/* Обложка книги */}
       <Link to={`/book/${book.id}`} className="block aspect-[3/4] bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500">
         {book.imageUrl ? (
@@ -68,8 +68,27 @@ export default function BookCard({ book }: BookCardProps) {
         {/* Градиентный оверлей */}
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
+        {/* Статусные индикаторы */}
+        <div className="absolute top-3 left-3 flex gap-1">
+          {isFavorite && (
+            <div className="px-2 py-1 bg-red-500 text-white text-xs rounded-full font-medium shadow-md">
+              ❤️
+            </div>
+          )}
+          {isRead && (
+            <div className="px-2 py-1 bg-green-500 text-white text-xs rounded-full font-medium shadow-md">
+              ✓
+            </div>
+          )}
+          {isWantToRead && (
+            <div className="px-2 py-1 bg-blue-500 text-white text-xs rounded-full font-medium shadow-md">
+              🔖
+            </div>
+          )}
+        </div>
+      </Link>
         {/* Кнопки действий */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2">
+        <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
           <button
             type="button"
             onClick={handleFavoriteToggle}
@@ -116,25 +135,6 @@ export default function BookCard({ book }: BookCardProps) {
           </button>
         </div>
 
-        {/* Статусные индикаторы */}
-        <div className="absolute top-3 left-3 flex gap-1">
-          {isFavorite && (
-            <div className="px-2 py-1 bg-red-500 text-white text-xs rounded-full font-medium shadow-md">
-              ❤️
-            </div>
-          )}
-          {isRead && (
-            <div className="px-2 py-1 bg-green-500 text-white text-xs rounded-full font-medium shadow-md">
-              ✓
-            </div>
-          )}
-          {isWantToRead && (
-            <div className="px-2 py-1 bg-blue-500 text-white text-xs rounded-full font-medium shadow-md">
-              🔖
-            </div>
-          )}
-        </div>
-      </Link>
       
       {/* Информация о книге */}
       <div className="p-4">
