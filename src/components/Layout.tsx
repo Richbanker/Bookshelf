@@ -71,15 +71,26 @@ function Header() {
             })}
           </nav>
 
-          {/* Мобильное меню (заглушка) */}
-          <div className="md:hidden">
-            <button type="button" disabled aria-label="Мобильное меню недоступно" className="p-2 rounded-lg text-slate-400 cursor-not-allowed">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
         </div>
+        <nav aria-label="Мобильная навигация" className="flex md:hidden gap-2 overflow-x-auto pb-3">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex shrink-0 items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                  isActive ? 'bg-blue-600 text-white' : 'text-slate-700 bg-slate-100'
+                }`}
+              >
+                <Icon size={16} aria-hidden="true" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </header>
   );
