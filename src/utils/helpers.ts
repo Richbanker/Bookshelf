@@ -22,9 +22,10 @@ export const formatAuthors = (authors: string[] | undefined): string => {
 };
 
 export const getRatingStars = (rating: number | undefined): string => {
-  if (!rating) return '☆☆☆☆☆';
-  const fullStars = Math.floor(Math.max(0, Math.min(5, rating)));
-  const hasHalfStar = rating % 1 >= 0.5;
+  if (typeof rating !== 'number' || !Number.isFinite(rating) || rating <= 0) return '☆☆☆☆☆';
+  const safeRating = Math.min(5, rating);
+  const fullStars = Math.floor(safeRating);
+  const hasHalfStar = fullStars < 5 && safeRating - fullStars >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
   
   return '★'.repeat(fullStars) + (hasHalfStar ? '☆' : '') + '☆'.repeat(emptyStars);
