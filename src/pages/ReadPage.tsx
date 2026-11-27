@@ -33,7 +33,7 @@ export default function ReadPage() {
                 <h2 className="text-xl font-semibold text-slate-800">Ваши достижения</h2>
               </div>
               <p className="text-slate-600">
-                {readBooks.length} {readBooks.length === 1 ? 'книга' : 
+                {readBooks.length} {readBooks.length % 10 === 1 && readBooks.length % 100 !== 11 ? 'книга' : 
                   readBooks.length % 10 >= 2 && readBooks.length % 10 <= 4 && (readBooks.length % 100 < 12 || readBooks.length % 100 > 14) ? 'книги' : 'книг'} прочитано
               </p>
             </div>
