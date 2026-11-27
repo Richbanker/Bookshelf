@@ -33,7 +33,7 @@ export default function FavoritesPage() {
                 <h2 className="text-xl font-semibold text-slate-800">Ваша библиотека</h2>
               </div>
               <p className="text-slate-600">
-                {favoriteBooks.length} {favoriteBooks.length === 1 ? 'книга' : 
+                {favoriteBooks.length} {favoriteBooks.length % 10 === 1 && favoriteBooks.length % 100 !== 11 ? 'книга' : 
                   favoriteBooks.length % 10 >= 2 && favoriteBooks.length % 10 <= 4 && (favoriteBooks.length % 100 < 12 || favoriteBooks.length % 100 > 14) ? 'книги' : 'книг'} в избранном
               </p>
             </div>
