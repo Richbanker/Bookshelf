@@ -1,5 +1,8 @@
 # Bookshelf - React + TypeScript + Tailwind CSS v4
 
+
+[![Просмотры README](https://vbr.nathanchung.dev/badge?page_id=Richbanker.Bookshelf&text=README_Views)](https://github.com/Richbanker/Bookshelf)
+
 Современный фронтенд-проект для управления библиотекой книг, построенный на React, TypeScript и Tailwind CSS v4.
 
 ## 🧩 Стек проекта

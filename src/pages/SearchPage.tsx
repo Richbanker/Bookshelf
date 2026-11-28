@@ -117,14 +117,14 @@ export default function SearchPage() {
       <div className="text-center mb-12">
         <div className="flex items-center justify-center gap-3 mb-6">
           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <Sparkles size={24} className="text-white" />
+            <Sparkles aria-hidden="true" size={24} className="text-white" />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Поиск книг
           </h1>
         </div>
         <p className="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed">
-          Найдите интересующие вас книги с помощью Google Books API. 
+          Найдите интересующие вас книги с помощью Google Books и резервного каталога Open Library.
           Ищите по названию, автору или ключевым словам.
         </p>
       </div>
@@ -134,10 +134,11 @@ export default function SearchPage() {
         <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+              <Search aria-hidden="true" className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input
                 type="text"
                 ref={searchInput}
+                aria-label="Поиск книг по названию, автору или ключевым словам"
                 value={localQuery}
                 onChange={(e) => handleQueryChange(e.target.value)}
                 placeholder="Введите название книги, автора или ключевые слова..."
@@ -151,12 +152,12 @@ export default function SearchPage() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 size={20} className="animate-spin text-white" />
+                  <Loader2 aria-hidden="true" size={20} className="animate-spin text-white" />
                   <span className="text-white">Поиск...</span>
                 </>
               ) : (
                 <>
-                  <Search size={20} className="text-white" />
+                  <Search size={20} aria-hidden="true" className="text-white" />
                   <span className="text-white">Поиск</span>
                 </>
               )}
@@ -169,16 +170,16 @@ export default function SearchPage() {
       {isLoading && searchResults.length === 0 ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <Loader2 size={32} className="animate-spin text-white" />
+            <Loader2 aria-hidden="true" size={32} className="animate-spin text-white" />
           </div>
-          <p className="text-slate-600 text-lg font-medium">Поиск книг...</p>
+          <p role="status" className="text-slate-600 text-lg font-medium">Поиск книг...</p>
         </div>
       ) : failedSearch ? (
         <div className="text-center py-16">
           <div role="alert">
             <h2 className="text-xl font-semibold text-slate-800 mb-2">Не удалось выполнить поиск</h2>
             <p className="text-slate-600 max-w-md mx-auto">
-              Не удалось получить результаты от Google Books. Попробуйте ещё раз.
+              Попробуйте выполнить поиск ещё раз.
             </p>
           </div>
           <button
@@ -201,11 +202,11 @@ export default function SearchPage() {
           <div className="mb-8">
             <div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/50 shadow-lg">
               <div className="flex items-center gap-3 mb-2">
-                <BookOpen size={20} className="text-blue-500" />
+                <BookOpen aria-hidden="true" size={20} className="text-blue-500" />
                 <h2 className="text-xl font-semibold text-slate-800">Результаты поиска</h2>
               </div>
               <p className="text-slate-600">
-                Найдено <span className="font-semibold text-blue-600">{totalItems.toLocaleString()}</span> книг
+                Найдено <span className="font-semibold text-blue-600">{totalItems.toLocaleString('ru-RU')}</span> книг
                 {searchQuery && (
                   <span> по запросу <span className="font-semibold text-slate-800">"{searchQuery}"</span></span>
                 )}
@@ -224,8 +225,9 @@ export default function SearchPage() {
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-4">
               <button
+                type="button"
                 onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
+                disabled={isLoading || currentPage === 1}
                 className="px-6 py-3 border-2 border-slate-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 font-medium"
               >
                 ← Назад
@@ -238,8 +240,9 @@ export default function SearchPage() {
               </div>
               
               <button
+                type="button"
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={isLoading || currentPage === totalPages}
                 className="px-6 py-3 border-2 border-slate-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 font-medium"
               >
                 Вперед →
@@ -250,7 +253,7 @@ export default function SearchPage() {
       ) : searchQuery ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <BookOpen size={32} className="text-white" />
+            <BookOpen aria-hidden="true" size={32} className="text-white" />
           </div>
           <h3 className="text-xl font-semibold text-slate-800 mb-2">Книги не найдены</h3>
           <p className="text-slate-600 max-w-md mx-auto">
@@ -260,7 +263,7 @@ export default function SearchPage() {
       ) : (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <Search size={32} className="text-white" />
+            <Search aria-hidden="true" size={32} className="text-white" />
           </div>
           <h3 className="text-xl font-semibold text-slate-800 mb-2">Начните поиск</h3>
           <p className="text-slate-600">
@@ -270,4 +273,4 @@ export default function SearchPage() {
       )}
     </div>
   );
-} 
+}

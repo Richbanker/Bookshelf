@@ -2,12 +2,15 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 
 test.use({ serviceWorkers: 'block' });
 
-const booksEndpoint = 'https://www.googleapis.com/books/v1/volumes';
+const googleEndpoint = 'https://www.googleapis.com/books/v1/volumes';
+const openLibraryEndpoint = 'https://openlibrary.org/search.json';
 const replyReadMarker = 'bookshelf-test:response-read';
 const unavailable = { status: 503, json: { error: { message: 'Service unavailable' } } };
 
 type MockReply = { status: number; json: object };
-type SearchTestWindow = Window & { readonly __bookshelfSearchRequests?: number };
+type SearchTestWindow = Window & {
+  readonly __bookshelfSearchRequests?: { google: number; openLibrary: number };
+};
 
 function found(id: string, title: string, totalItems: number): MockReply {
   return { status: 200, json: { totalItems, items: [{ id, volumeInfo: { title } }] } };
@@ -16,15 +19,20 @@ function found(id: string, title: string, totalItems: number): MockReply {
 async function openSearch(page: Page, baseURL: string | undefined) {
   if (!baseURL) throw new Error('Search tests require use.baseURL');
   const localOrigin = new URL(baseURL).origin;
-  const requests: Route[] = [];
+  const googleRequests: Route[] = [];
+  const openLibraryRequests: Route[] = [];
 
   await page.context().route('**/*', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
+    const endpoint = url.origin + url.pathname;
+    const get = request.method() === 'GET';
     if (url.origin === localOrigin) {
       await route.continue();
-    } else if (request.method() === 'GET' && url.origin + url.pathname === booksEndpoint) {
-      requests.push(route);
+    } else if (get && endpoint === googleEndpoint) {
+      googleRequests.push(route);
+    } else if (get && endpoint === openLibraryEndpoint) {
+      openLibraryRequests.push(route);
     } else {
       await route.abort();
     }
@@ -32,14 +40,19 @@ async function openSearch(page: Page, baseURL: string | undefined) {
 
   // Wait for the application to receive HTTP failures or parse successful bodies
   // before checking that a late reply had no effect. Arrival at the route is too early.
-  await page.addInitScript(({ endpoint, replyRead }) => {
-    let requestCount = 0;
-    Object.defineProperty(window, '__bookshelfSearchRequests', { get: () => requestCount });
+  await page.addInitScript(({ google, openLibrary, replyRead }) => {
+    const requestCounts = { google: 0, openLibrary: 0 };
+    Object.defineProperty(window, '__bookshelfSearchRequests', { get: () => requestCounts });
     const fetch = window.fetch.bind(window);
     window.fetch = async (...args) => {
       const url = args[0] instanceof Request ? args[0].url : String(args[0]);
-      if (!url.startsWith(endpoint + '?')) return fetch(...args);
-      requestCount++;
+      if (url.startsWith(google + '?')) {
+        requestCounts.google++;
+      } else if (url.startsWith(openLibrary + '?')) {
+        requestCounts.openLibrary++;
+      } else {
+        return fetch(...args);
+      }
       const response = await fetch(...args);
 
       const reportRead = () => {
@@ -64,7 +77,7 @@ async function openSearch(page: Page, baseURL: string | undefined) {
       }
       return response;
     };
-  }, { endpoint: booksEndpoint, replyRead: replyReadMarker });
+  }, { google: googleEndpoint, openLibrary: openLibraryEndpoint, replyRead: replyReadMarker });
 
   await page.clock.install({ time: new Date('2026-01-01T08:00:00Z') });
   await page.clock.pauseAt(new Date('2026-01-01T10:00:00Z'));
@@ -77,8 +90,8 @@ async function openSearch(page: Page, baseURL: string | undefined) {
   const retry = page.getByRole('button', { name: 'Повторить поиск' });
 
   async function requestAt(index: number, query: string, offset = 0) {
-    await expect.poll(() => requests[index]?.request().url()).toBeDefined();
-    const route = requests[index];
+    await expect.poll(() => googleRequests[index]?.request().url()).toBeDefined();
+    const route = googleRequests[index];
     const parameters = new URL(route.request().url()).searchParams;
     expect(parameters.get('q')).toBe(query);
     expect(parameters.get('startIndex')).toBe(String(offset));
@@ -87,7 +100,7 @@ async function openSearch(page: Page, baseURL: string | undefined) {
   }
 
   async function submit(query: string) {
-    const index = requests.length;
+    const index = googleRequests.length;
     await field.fill(query);
     await field.press('Enter');
     return requestAt(index, query);
@@ -107,14 +120,33 @@ async function openSearch(page: Page, baseURL: string | undefined) {
     await page.clock.runFor(32);
   }
 
-  const requestCount = () => page.evaluate(() => (window as SearchTestWindow).__bookshelfSearchRequests);
+  async function fallbackFor(googleRequest: Route) {
+    const index = openLibraryRequests.length;
+    await reply(googleRequest, unavailable);
+    await expect.poll(() => openLibraryRequests[index]?.request().url()).toBeDefined();
+    const route = openLibraryRequests[index];
+    const googleParameters = new URL(googleRequest.request().url()).searchParams;
+    const recorded = new URL(route.request().url()).searchParams;
+    const limit = Number(googleParameters.get('maxResults'));
+    const pageNumber = Number(googleParameters.get('startIndex')) / limit + 1;
+    expect(recorded.get('q')).toBe(googleParameters.get('q'));
+    expect(recorded.get('page')).toBe(String(pageNumber));
+    expect(recorded.get('limit')).toBe(String(limit));
+    return route;
+  }
 
-  return { requestCount, field, loading, empty, error, retry, submit, requestAt, reply };
+  async function fail(googleRequest: Route) {
+    await reply(await fallbackFor(googleRequest), unavailable);
+  }
+
+  const requestCounts = () => page.evaluate(() => (window as SearchTestWindow).__bookshelfSearchRequests);
+
+  return { requestCounts, field, loading, empty, error, retry, submit, requestAt, reply, fallbackFor, fail };
 }
 
 const lateReplies = [
   { description: 'successful result', response: found('old', 'Старая книга', 7) },
-  { description: 'HTTP 503', response: unavailable },
+  { description: 'failure from both providers' },
 ];
 
 for (const { description, response } of lateReplies) {
@@ -125,7 +157,11 @@ for (const { description, response } of lateReplies) {
 
     await search.reply(latest, found('new', 'Новая книга', 42));
     await expect(page.getByRole('heading', { name: 'Новая книга' })).toBeVisible();
-    await search.reply(earlier, response);
+    if (response) {
+      await search.reply(earlier, response);
+    } else {
+      await search.fail(earlier);
+    }
 
     await expect(page.getByRole('heading', { name: 'Новая книга' })).toBeVisible();
     await expect(page.getByText(/Найдено\s+42\s+книг/)).toBeVisible();
@@ -139,7 +175,7 @@ test('a stale error cannot stop loading for the current search', async ({ page, 
   const earlier = await search.submit('Старый запрос');
   const latest = await search.submit('Новый запрос');
 
-  await search.reply(earlier, unavailable);
+  await search.fail(earlier);
   await expect(search.loading).toBeVisible();
   await expect(search.error).toBeHidden();
 
@@ -156,9 +192,10 @@ test('a successful empty response shows the empty screen', async ({ page, baseUR
   await expect(search.empty).toBeVisible();
   await expect(search.error).toBeHidden();
   await expect(search.retry).toBeHidden();
+  expect(await search.requestCounts()).toEqual({ google: 1, openLibrary: 0 });
 });
 
-test('HTTP 503 on page two shows an error and retry repeats that request once', async ({ page, baseURL }) => {
+test('failure from both providers on page two shows an error and retry repeats that request once', async ({ page, baseURL }) => {
   const search = await openSearch(page, baseURL);
   const query = 'Лев Толстой';
   const first = await search.submit(query);
@@ -166,7 +203,7 @@ test('HTTP 503 on page two shows an error and retry repeats that request once', 
   await expect(page.getByRole('heading', { name: 'Анна Каренина' })).toBeVisible();
   await page.getByRole('button', { name: 'Вперед →' }).press('Enter');
   const second = await search.requestAt(1, query, 20);
-  await search.reply(second, unavailable);
+  await search.fail(second);
 
   await expect(search.error).toBeVisible();
   await expect(search.empty).toBeHidden();
@@ -185,5 +222,27 @@ test('HTTP 503 on page two shows an error and retry repeats that request once', 
   await expect(search.field).toHaveValue(query);
   await expect(search.loading).toBeHidden();
   await page.clock.runFor(500);
-  expect(await search.requestCount()).toBe(3);
+  expect(await search.requestCounts()).toEqual({ google: 3, openLibrary: 1 });
+});
+
+test('Open Library supplies results when Google Books returns HTTP 503', async ({ page, baseURL }) => {
+  const search = await openSearch(page, baseURL);
+  const primary = await search.submit('Иван Тургенев');
+  const fallback = await search.fallbackFor(primary);
+  await expect(search.loading).toBeVisible();
+  await expect(search.error).toBeHidden();
+
+  await search.reply(fallback, {
+    status: 200,
+    json: {
+      numFound: 12,
+      docs: [{ key: '/works/OL123W', title: 'Дворянское гнездо', author_name: ['Иван Тургенев'] }],
+    },
+  });
+  await expect(page.getByRole('heading', { name: 'Дворянское гнездо' })).toBeVisible();
+  await expect(page.getByText(/Найдено\s+12\s+книг/)).toBeVisible();
+  await expect(search.loading).toBeHidden();
+  await expect(search.error).toBeHidden();
+  await expect(search.retry).toBeHidden();
+  expect(await search.requestCounts()).toEqual({ google: 1, openLibrary: 1 });
 });

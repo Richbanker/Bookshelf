@@ -10,6 +10,7 @@ export const formatDate = (dateString: string): string => {
 };
 
 export const truncateText = (text: string, maxLength: number): string => {
+  if (maxLength <= 0) return '';
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
 };
@@ -22,7 +23,7 @@ export const formatAuthors = (authors: string[] | undefined): string => {
 
 export const getRatingStars = (rating: number | undefined): string => {
   if (!rating) return '☆☆☆☆☆';
-  const fullStars = Math.floor(rating);
+  const fullStars = Math.floor(Math.max(0, Math.min(5, rating)));
   const hasHalfStar = rating % 1 >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
   
