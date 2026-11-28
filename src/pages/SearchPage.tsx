@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Loader2, Sparkles, BookOpen } from 'lucide-react';
 import { useBookStore } from '../store/useBookStore';
 import { searchBooks } from '../api/googleBooks';
@@ -20,58 +20,92 @@ export default function SearchPage() {
   } = useBookStore();
 
   const [localQuery, setLocalQuery] = useState(searchQuery);
-  const [searchError, setSearchError] = useState(false);
-  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+  const [failedSearch, setFailedSearch] = useState<{ query: string; page: number } | null>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const initialQuery = useRef(searchQuery);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const latestRequest = useRef(0);
 
-  // Debounce поискового запроса
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(localQuery);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [localQuery]);
-
-  // Выполнение поиска при изменении debouncedQuery
-  useEffect(() => {
-    if (debouncedQuery.trim()) {
-      performSearch(debouncedQuery, 1);
-    } else {
+  const performSearch = useCallback(async (query: string, page: number) => {
+    const requestId = ++latestRequest.current;
+    setFailedSearch(null);
+    setIsLoading(true);
+    if (query !== useBookStore.getState().searchQuery) {
       setSearchResults([]);
       setTotalItems(0);
     }
-  }, [debouncedQuery]);
+    setSearchQuery(query);
+    setCurrentPage(page);
 
-  const performSearch = async (query: string, page: number) => {
     try {
-      setIsLoading(true);
-      setSearchError(false);
-      setSearchQuery(query);
-      setCurrentPage(page);
-      
       const result = await searchBooks(query, page, 20);
+      if (requestId !== latestRequest.current) return;
+
       setSearchResults(result.books);
       setTotalItems(result.totalItems);
     } catch (error) {
-      setSearchError(true);
+      if (requestId !== latestRequest.current) return;
+
       console.error('Search error:', error);
       setSearchResults([]);
       setTotalItems(0);
+      setFailedSearch({ query, page });
     } finally {
-      setIsLoading(false);
+      if (requestId === latestRequest.current) {
+        setIsLoading(false);
+      }
     }
+  }, [setIsLoading, setSearchQuery, setCurrentPage, setSearchResults, setTotalItems]);
+
+  const invalidateSearch = useCallback(() => {
+    latestRequest.current++;
+    setIsLoading(false);
+  }, [setIsLoading]);
+
+  useEffect(() => {
+    if (initialQuery.current.trim()) {
+      void performSearch(initialQuery.current, 1);
+    }
+
+    return () => {
+      clearTimeout(debounceTimer.current);
+      invalidateSearch();
+    };
+  }, [invalidateSearch, performSearch]);
+
+  const handleQueryChange = (query: string) => {
+    setLocalQuery(query);
+    clearTimeout(debounceTimer.current);
+
+    if (!query.trim()) {
+      invalidateSearch();
+      setFailedSearch(null);
+      setSearchQuery('');
+      setCurrentPage(1);
+      setSearchResults([]);
+      setTotalItems(0);
+      return;
+    }
+
+    if (query === searchQuery) return;
+
+    debounceTimer.current = setTimeout(() => {
+      void performSearch(query, 1);
+    }, 500);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    clearTimeout(debounceTimer.current);
+
     if (localQuery.trim()) {
-      performSearch(localQuery, 1);
+      void performSearch(localQuery, 1);
     }
   };
 
   const handlePageChange = (newPage: number) => {
-    if (debouncedQuery.trim()) {
-      performSearch(debouncedQuery, newPage);
+    if (searchQuery.trim()) {
+      void performSearch(searchQuery, newPage);
     }
   };
 
@@ -83,14 +117,14 @@ export default function SearchPage() {
       <div className="text-center mb-12">
         <div className="flex items-center justify-center gap-3 mb-6">
           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <Sparkles size={24} className="text-white" />
+            <Sparkles aria-hidden="true" size={24} className="text-white" />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Поиск книг
           </h1>
         </div>
         <p className="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed">
-          Найдите интересующие вас книги с помощью Google Books и резервного каталога Open Library. 
+          Найдите интересующие вас книги с помощью Google Books и резервного каталога Open Library.
           Ищите по названию, автору или ключевым словам.
         </p>
       </div>
@@ -103,21 +137,22 @@ export default function SearchPage() {
               <Search aria-hidden="true" className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input
                 type="text"
+                ref={searchInput}
                 aria-label="Поиск книг по названию, автору или ключевым словам"
                 value={localQuery}
-                onChange={(e) => setLocalQuery(e.target.value)}
+                onChange={(e) => handleQueryChange(e.target.value)}
                 placeholder="Введите название книги, автора или ключевые слова..."
                 className="w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-lg"
               />
             </div>
             <button 
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading && localQuery === searchQuery && currentPage === 1}
               className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:from-slate-400 disabled:to-slate-500 text-white px-8 py-4 rounded-2xl font-semibold transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
             >
               {isLoading ? (
                 <>
-                  <Loader2 size={20} className="animate-spin text-white" />
+                  <Loader2 aria-hidden="true" size={20} className="animate-spin text-white" />
                   <span className="text-white">Поиск...</span>
                 </>
               ) : (
@@ -135,9 +170,31 @@ export default function SearchPage() {
       {isLoading && searchResults.length === 0 ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <Loader2 size={32} className="animate-spin text-white" />
+            <Loader2 aria-hidden="true" size={32} className="animate-spin text-white" />
           </div>
           <p role="status" className="text-slate-600 text-lg font-medium">Поиск книг...</p>
+        </div>
+      ) : failedSearch ? (
+        <div className="text-center py-16">
+          <div role="alert">
+            <h2 className="text-xl font-semibold text-slate-800 mb-2">Не удалось выполнить поиск</h2>
+            <p className="text-slate-600 max-w-md mx-auto">
+              Попробуйте выполнить поиск ещё раз.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={(event) => {
+              if (event.detail === 0) {
+                searchInput.current?.focus({ preventScroll: true });
+              }
+              void performSearch(failedSearch.query, failedSearch.page);
+            }}
+            disabled={localQuery !== failedSearch.query}
+            className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+          >
+            Повторить поиск
+          </button>
         </div>
       ) : searchResults.length > 0 ? (
         <>
@@ -145,13 +202,13 @@ export default function SearchPage() {
           <div className="mb-8">
             <div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200/50 shadow-lg">
               <div className="flex items-center gap-3 mb-2">
-                <BookOpen size={20} className="text-blue-500" />
+                <BookOpen aria-hidden="true" size={20} className="text-blue-500" />
                 <h2 className="text-xl font-semibold text-slate-800">Результаты поиска</h2>
               </div>
               <p className="text-slate-600">
-                Найдено <span className="font-semibold text-blue-600">{totalItems.toLocaleString("ru-RU")}</span> книг
-                {debouncedQuery && (
-                  <span> по запросу <span className="font-semibold text-slate-800">"{debouncedQuery}"</span></span>
+                Найдено <span className="font-semibold text-blue-600">{totalItems.toLocaleString('ru-RU')}</span> книг
+                {searchQuery && (
+                  <span> по запросу <span className="font-semibold text-slate-800">"{searchQuery}"</span></span>
                 )}
               </p>
             </div>
@@ -193,16 +250,10 @@ export default function SearchPage() {
             </div>
           )}
         </>
-      ) : searchError ? (
-        <div role="alert" className="text-center py-16">
-          <h3 className="text-xl font-semibold text-slate-800 mb-2">Сервис поиска временно недоступен</h3>
-          <p className="text-slate-600">Не удалось получить ответ Google Books. Попробуйте повторить запрос позже.</p>
-          <button type="button" onClick={() => performSearch(localQuery, 1)} className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-xl">Повторить поиск</button>
-        </div>
-      ) : debouncedQuery ? (
+      ) : searchQuery ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <BookOpen size={32} className="text-white" />
+            <BookOpen aria-hidden="true" size={32} className="text-white" />
           </div>
           <h3 className="text-xl font-semibold text-slate-800 mb-2">Книги не найдены</h3>
           <p className="text-slate-600 max-w-md mx-auto">
@@ -212,7 +263,7 @@ export default function SearchPage() {
       ) : (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <Search size={32} className="text-white" />
+            <Search aria-hidden="true" size={32} className="text-white" />
           </div>
           <h3 className="text-xl font-semibold text-slate-800 mb-2">Начните поиск</h3>
           <p className="text-slate-600">
@@ -222,4 +273,4 @@ export default function SearchPage() {
       )}
     </div>
   );
-} 
+}
