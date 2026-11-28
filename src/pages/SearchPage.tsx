@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Loader2, Sparkles, BookOpen } from 'lucide-react';
 import { useBookStore } from '../store/useBookStore';
 import { searchBooks } from '../api/googleBooks';
@@ -20,55 +20,92 @@ export default function SearchPage() {
   } = useBookStore();
 
   const [localQuery, setLocalQuery] = useState(searchQuery);
-  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+  const [failedSearch, setFailedSearch] = useState<{ query: string; page: number } | null>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const initialQuery = useRef(searchQuery);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const latestRequest = useRef(0);
 
-  // Debounce поискового запроса
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(localQuery);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [localQuery]);
-
-  // Выполнение поиска при изменении debouncedQuery
-  useEffect(() => {
-    if (debouncedQuery.trim()) {
-      performSearch(debouncedQuery, 1);
-    } else {
+  const performSearch = useCallback(async (query: string, page: number) => {
+    const requestId = ++latestRequest.current;
+    setFailedSearch(null);
+    setIsLoading(true);
+    if (query !== useBookStore.getState().searchQuery) {
       setSearchResults([]);
       setTotalItems(0);
     }
-  }, [debouncedQuery]);
+    setSearchQuery(query);
+    setCurrentPage(page);
 
-  const performSearch = async (query: string, page: number) => {
     try {
-      setIsLoading(true);
-      setSearchQuery(query);
-      setCurrentPage(page);
-      
       const result = await searchBooks(query, page, 20);
+      if (requestId !== latestRequest.current) return;
+
       setSearchResults(result.books);
       setTotalItems(result.totalItems);
     } catch (error) {
+      if (requestId !== latestRequest.current) return;
+
       console.error('Search error:', error);
       setSearchResults([]);
       setTotalItems(0);
+      setFailedSearch({ query, page });
     } finally {
-      setIsLoading(false);
+      if (requestId === latestRequest.current) {
+        setIsLoading(false);
+      }
     }
+  }, [setIsLoading, setSearchQuery, setCurrentPage, setSearchResults, setTotalItems]);
+
+  const invalidateSearch = useCallback(() => {
+    latestRequest.current++;
+    setIsLoading(false);
+  }, [setIsLoading]);
+
+  useEffect(() => {
+    if (initialQuery.current.trim()) {
+      void performSearch(initialQuery.current, 1);
+    }
+
+    return () => {
+      clearTimeout(debounceTimer.current);
+      invalidateSearch();
+    };
+  }, [invalidateSearch, performSearch]);
+
+  const handleQueryChange = (query: string) => {
+    setLocalQuery(query);
+    clearTimeout(debounceTimer.current);
+
+    if (!query.trim()) {
+      invalidateSearch();
+      setFailedSearch(null);
+      setSearchQuery('');
+      setCurrentPage(1);
+      setSearchResults([]);
+      setTotalItems(0);
+      return;
+    }
+
+    if (query === searchQuery) return;
+
+    debounceTimer.current = setTimeout(() => {
+      void performSearch(query, 1);
+    }, 500);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    clearTimeout(debounceTimer.current);
+
     if (localQuery.trim()) {
-      performSearch(localQuery, 1);
+      void performSearch(localQuery, 1);
     }
   };
 
   const handlePageChange = (newPage: number) => {
-    if (debouncedQuery.trim()) {
-      performSearch(debouncedQuery, newPage);
+    if (searchQuery.trim()) {
+      void performSearch(searchQuery, newPage);
     }
   };
 
@@ -100,15 +137,16 @@ export default function SearchPage() {
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <input
                 type="text"
+                ref={searchInput}
                 value={localQuery}
-                onChange={(e) => setLocalQuery(e.target.value)}
+                onChange={(e) => handleQueryChange(e.target.value)}
                 placeholder="Введите название книги, автора или ключевые слова..."
                 className="w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-lg"
               />
             </div>
             <button 
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading && localQuery === searchQuery && currentPage === 1}
               className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:from-slate-400 disabled:to-slate-500 text-white px-8 py-4 rounded-2xl font-semibold transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
             >
               {isLoading ? (
@@ -135,6 +173,28 @@ export default function SearchPage() {
           </div>
           <p className="text-slate-600 text-lg font-medium">Поиск книг...</p>
         </div>
+      ) : failedSearch ? (
+        <div className="text-center py-16">
+          <div role="alert">
+            <h2 className="text-xl font-semibold text-slate-800 mb-2">Не удалось выполнить поиск</h2>
+            <p className="text-slate-600 max-w-md mx-auto">
+              Не удалось получить результаты от Google Books. Попробуйте ещё раз.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={(event) => {
+              if (event.detail === 0) {
+                searchInput.current?.focus({ preventScroll: true });
+              }
+              void performSearch(failedSearch.query, failedSearch.page);
+            }}
+            disabled={localQuery !== failedSearch.query}
+            className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+          >
+            Повторить поиск
+          </button>
+        </div>
       ) : searchResults.length > 0 ? (
         <>
           {/* Статистика */}
@@ -146,8 +206,8 @@ export default function SearchPage() {
               </div>
               <p className="text-slate-600">
                 Найдено <span className="font-semibold text-blue-600">{totalItems.toLocaleString()}</span> книг
-                {debouncedQuery && (
-                  <span> по запросу <span className="font-semibold text-slate-800">"{debouncedQuery}"</span></span>
+                {searchQuery && (
+                  <span> по запросу <span className="font-semibold text-slate-800">"{searchQuery}"</span></span>
                 )}
               </p>
             </div>
@@ -187,7 +247,7 @@ export default function SearchPage() {
             </div>
           )}
         </>
-      ) : debouncedQuery ? (
+      ) : searchQuery ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
             <BookOpen size={32} className="text-white" />
