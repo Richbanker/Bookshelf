@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { mergeLibraryBooks, parseLibraryTransfer } from '../utils/libraryTransfer';
 
 export interface Book {
   id: string;
@@ -40,6 +41,8 @@ interface BookStore {
   setTotalItems: (total: number) => void;
   setFilterStatus: (status: 'all' | 'favorite' | 'read' | 'want-to-read') => void;
   
+  importLibrary: (contents: string) => ImportSummary;
+
   // Управление книгами
   addToFavorites: (book: Book) => void;
   removeFromFavorites: (bookId: string) => void;
@@ -58,8 +61,37 @@ interface BookStore {
   isBookWantToRead: (bookId: string) => boolean;
 }
 
-export const useBookStore = create<BookStore>()(
-  persist(
+interface ImportSummary {
+  added: number;
+  matched: number;
+  enriched: number;
+}
+
+type PersistedLibrary = Pick<BookStore, 'books'>;
+const storageName = 'bookshelf-storage';
+const storageVersion = 0;
+const libraryStorage = createJSONStorage<PersistedLibrary>(() => localStorage);
+
+function saveImportedLibrary(currentBooks: BookWithStatus[], nextBooks: BookWithStatus[]) {
+  try {
+    if (!libraryStorage) throw new Error('Local storage unavailable');
+    const stored = libraryStorage.getItem(storageName);
+    if (stored instanceof Promise) throw new Error('Expected synchronous local storage');
+
+    if (stored?.version !== undefined && stored.version !== storageVersion) return false;
+
+    const storedBooks = stored?.state?.books ?? [];
+    if (JSON.stringify(storedBooks) !== JSON.stringify(currentBooks)) return false;
+
+    libraryStorage.setItem(storageName, { state: { books: nextBooks }, version: storageVersion });
+    return true;
+  } catch {
+    throw new Error('Не удалось сохранить библиотеку в браузере. Освободите место или проверьте настройки хранилища.');
+  }
+}
+
+export const useBookStore = create<BookStore>()<[['zustand/persist', PersistedLibrary]]>(
+  (publish, getState, store) => persist<BookStore, [], [], PersistedLibrary>(
     (set, get) => ({
       // Начальное состояние
       books: [],
@@ -78,6 +110,22 @@ export const useBookStore = create<BookStore>()(
       setTotalItems: (total) => set({ totalItems: total }),
       setFilterStatus: (status) => set({ filterStatus: status }),
       
+      importLibrary: (contents) => {
+        const imported = parseLibraryTransfer(contents);
+        const currentBooks = get().books;
+        const { books, added, matched, enriched } = mergeLibraryBooks(currentBooks, imported);
+
+        if (added > 0 || enriched > 0) {
+          if (!saveImportedLibrary(currentBooks, books)) {
+            throw new Error('Библиотека изменилась в другой вкладке. Обновите страницу и повторите импорт.');
+          }
+          // Zustand persist writes after publishing; imports must persist first.
+          publish({ books });
+        }
+
+        return { added, matched, enriched };
+      },
+
       // Управление книгами
       addToFavorites: (book) => {
         const { books } = get();
@@ -212,8 +260,10 @@ export const useBookStore = create<BookStore>()(
       },
     }),
     {
-      name: 'bookshelf-storage',
+      name: storageName,
+      version: storageVersion,
+      storage: libraryStorage,
       partialize: (state) => ({ books: state.books }),
     }
-  )
+  )(publish, getState, store)
 ); 

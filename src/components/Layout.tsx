@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Heart, BookOpen, Bookmark } from 'lucide-react';
+import { Search, Heart, BookOpen, Bookmark, ArrowLeftRight } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -26,12 +26,13 @@ function Header() {
     { path: '/favorites', label: 'Избранное', icon: Heart },
     { path: '/want-to-read', label: 'Хочу прочитать', icon: Bookmark },
     { path: '/read', label: 'Прочитано', icon: BookOpen },
+    { path: '/library-transfer', label: 'Перенос библиотеки', icon: ArrowLeftRight },
   ];
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex min-h-16 flex-wrap items-center justify-between gap-2 py-2">
           {/* Логотип */}
           <div className="flex items-center">
             <Link 
@@ -48,7 +49,7 @@ function Header() {
           </div>
 
           {/* Навигация */}
-          <nav className="hidden md:flex space-x-1">
+          <nav aria-label="Основная навигация" className="hidden flex-wrap gap-1 md:flex">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -58,27 +59,26 @@ function Header() {
                   key={item.path}
                   to={item.path}
                   aria-current={isActive ? "page" : undefined}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  className={`flex items-center space-x-2 px-2 py-2 rounded-lg font-medium transition-all duration-200 lg:px-4 ${
                     isActive
                       ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  <Icon size={16} className={isActive ? 'text-white' : ''} />
+                  <Icon aria-hidden="true" size={16} className={isActive ? 'text-white' : ''} />
                   <span className={isActive ? 'text-white' : ''}>{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          {/* Мобильное меню (заглушка) */}
-          <div className="md:hidden">
-            <button type="button" disabled aria-label="Мобильное меню недоступно" className="p-2 rounded-lg text-slate-400 cursor-not-allowed">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
+          <Link
+            to="/library-transfer"
+            aria-current={location.pathname === '/library-transfer' ? 'page' : undefined}
+            className="rounded-lg px-2 py-3 text-sm font-medium text-blue-700 hover:bg-blue-50 md:hidden"
+          >
+            Перенос библиотеки
+          </Link>
         </div>
       </div>
     </header>
