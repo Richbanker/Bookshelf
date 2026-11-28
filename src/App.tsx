@@ -5,6 +5,7 @@ import FavoritesPage from './pages/FavoritesPage';
 import WantToReadPage from './pages/WantToReadPage';
 import ReadPage from './pages/ReadPage';
 import BookPage from './pages/BookPage';
+import LibraryTransferPage from './pages/LibraryTransferPage';
 
 const Router = import.meta.env.VITE_ROUTER_MODE === 'hash' ? HashRouter : BrowserRouter;
 
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/want-to-read" element={<WantToReadPage />} />
           <Route path="/read" element={<ReadPage />} />
           <Route path="/book/:id" element={<BookPage />} />
+          <Route path="/library-transfer" element={<LibraryTransferPage />} />
         </Routes>
       </Layout>
     </Router>
