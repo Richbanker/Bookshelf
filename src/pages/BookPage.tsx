@@ -5,6 +5,18 @@ import type { Book } from '../store/useBookStore';
 import { useBookStore } from '../store/useBookStore';
 import { BookOpen, User, Calendar } from 'lucide-react';
 
+function formatPublicationDate(value: string): string {
+  if (/^\d{4}$/.test(value)) return value;
+  const monthOnly = /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+  if (!monthOnly && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const dateString = monthOnly ? `${value}-01` : value;
+  const date = new Date(`${dateString}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== dateString) return value;
+  return date.toLocaleDateString('ru-RU', monthOnly
+    ? { month: 'long', year: 'numeric', timeZone: 'UTC' }
+    : { timeZone: 'UTC' });
+}
+
 export default function BookPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -72,7 +84,7 @@ export default function BookPage() {
           {book.publishedDate && (
             <div className="flex items-center gap-2 mb-4 text-slate-500">
               <Calendar size={16} />
-              <span>{new Date(book.publishedDate).toLocaleDateString('ru-RU')}</span>
+              <span>{formatPublicationDate(book.publishedDate)}</span>
             </div>
           )}
           {book.description && (
